@@ -1,9 +1,10 @@
 # WTT_Syzygy Quickstart Guide
 
 ## Overview
-WTT_Syzygy is a comprehensive trading indicator that combines volume spike detection with support/resistance zone analysis to provide enhanced market insights and trading signals.
+WTT_Syzygy is a comprehensive trading indicator that combines volume spike detection with support/resistance zone analysis to provide enhanced market insights and trading signals. The indicator's signal generation and optimization algorithms are derived using advanced AI technology to ensure maximum accuracy and reliability.
 
 ## Key Features
+- **AI-Powered Signal Generation**: Advanced algorithms derived using artificial intelligence for optimal signal accuracy
 - **Volume Spike Detection**: Identifies unusual volume spikes with configurable thresholds
 - **Support/Resistance Zones**: Dynamic liquidity zone identification with penetration alerts
 - **Daily High/Low Tracking**: Optional daily level monitoring
@@ -87,6 +88,10 @@ Alert Settings:
 - **Alert Frequency**: Use TradingView's alert frequency settings to control notification frequency
 
 ---
+**Copyright © 2025 William Skrzypczak. All rights reserved.**
+
 **Disclaimer**: This indicator is for educational purposes only. Trading involves risk and past performance does not guarantee future results. Always use proper risk management and consider your trading experience before using any trading signals.
 
 **Version**: Rev1.1 - Enhanced visual indicators with small labels for volume spikes and tiny triangles for zone penetration
+
+**AI-Powered**: Signal generation and optimization algorithms derived using advanced AI technology for enhanced accuracy and reliability.
