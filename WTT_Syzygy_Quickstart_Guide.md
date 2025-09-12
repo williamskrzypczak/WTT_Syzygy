@@ -12,12 +12,7 @@ WTT_Syzygy is a comprehensive trading indicator that combines volume spike detec
 
 ## Quick Setup
 
-### 1. Installation
-1. Copy the `WTT_Syzygy.pine` code
-2. Open TradingView Pine Script Editor
-3. Paste the code and click "Add to Chart"
-
-### 2. Recommended Settings
+### Recommended Settings
 ```
 Volume Spike Settings:
 - Volume Lookback Period: 20 (default)
