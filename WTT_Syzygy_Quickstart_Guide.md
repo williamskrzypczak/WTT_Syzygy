@@ -11,26 +11,7 @@ WTT_Syzygy is a comprehensive trading indicator that combines volume spike detec
 - **Unified Alert System**: Comprehensive alerts for all signal types
 
 ## Quick Setup
-
-### Recommended Settings
-```
-Volume Spike Settings:
-- Volume Lookback Period: 20 (default)
-- Volume Spike Threshold: 1.2 (default)
-- Price Change Threshold: 0.5% (default)
-- Use ATR for Price Filter: ✓ (enabled)
-
-Support/Resistance Settings:
-- Number of Liquidity Zones: 5 (default)
-- Show Low Liquidity Zones: ✓ (enabled)
-- Support Zone Color: Gray
-- Resistance Zone Color: Teal
-
-Alert Settings:
-- Enable All Alerts: ✓ (enabled)
-- Show Alert Indicators: ✓ (enabled)
-- Zone Penetration Threshold: 50% (default)
-```
+The indicator comes with optimized default settings that work well for most trading scenarios. Simply add it to your chart and start monitoring for signals.
 
 ## Signal Interpretation
 
@@ -76,11 +57,6 @@ Alert Settings:
 - **Zones Not Showing**: Ensure "Show Low Liquidity Zones" is enabled
 - **Alerts Not Working**: Verify "Enable All Alerts" is checked in settings
 
-## Customization Tips
-- **Sensitive Detection**: Lower volume threshold (1.0-1.2) for more signals
-- **Conservative Detection**: Higher volume threshold (1.5-2.0) for fewer, higher-quality signals
-- **Zone Visibility**: Adjust zone colors and transparency for your chart theme
-- **Alert Frequency**: Use TradingView's alert frequency settings to control notification frequency
 
 ---
 **Copyright © 2025 William Skrzypczak. All rights reserved.**
