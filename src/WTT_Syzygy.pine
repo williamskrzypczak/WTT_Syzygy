@@ -1,9 +1,9 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.1", shorttitle="WTT_Syzygy R1.1", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.2", shorttitle="WTT_Syzygy R1.2", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.1
+// Version: Rev1.2
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis to provide enhanced market 
@@ -17,6 +17,7 @@ indicator("WTT_Syzygy_Rev1.1", shorttitle="WTT_Syzygy R1.1", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.2: Streamlined visual design - Removed volume spike label plots, enabled volume spike bar coloring by default (green for upward, bright purple for downward), increased zone penetration triangle size to small for better visibility
 // R1.1: Enhanced visual indicators - Changed volume spike signals from circles to small labels, zone penetration from circles to tiny triangles, enabled low liquidity zones by default for comprehensive zone visibility
 // R1.0: Initial unified release combining WTT_VolumeSpike v1.2 and WTT_SupportResistance R1.65
 // =============================================================================
@@ -48,8 +49,10 @@ show_alert_indicators = input.bool(true, "Show Alert Indicators", group="Alert S
 
 // Display Settings
 showSignals = input.bool(true, "Show Volume Spike Signals", group="Display Settings")
-showVolumeBars = input.bool(false, "Show Volume Spike Bars", group="Display Settings")
 show_daily_levels = input.bool(false, "Show Daily High/Low", group="Display Settings", tooltip="Display the highest high and lowest low of the current trading day")
+
+// Volume spike bars always enabled
+showVolumeBars = true
 
 // =============================================================================
 // FUNCTION DEFINITIONS
@@ -339,18 +342,16 @@ if price_in_support and box_sup_array.size() > 0
 // VISUAL ELEMENTS
 // =============================================================================
 
-// Volume spike signals
-plotshape(showSignals and longVolumeCondition, title="Volume Spike Long", location=location.belowbar, color=color.new(color.green, 0), style=shape.labelup, size=size.small)
-plotshape(showSignals and shortVolumeCondition, title="Volume Spike Short", location=location.abovebar, color=color.new(color.red, 0), style=shape.labeldown, size=size.small)
+// Volume spike signals removed - using bar coloring instead
 
 // Volume spike bars (optional)
 longVolumeSpike = isVolumeSpike and priceChange > 0
 shortVolumeSpike = isVolumeSpike and priceChange < 0
-barcolor(showVolumeBars and longVolumeSpike ? color.new(color.green, 0) : showVolumeBars and shortVolumeSpike ? color.new(color.red, 0) : na, title="Volume Spike")
+barcolor(showVolumeBars and longVolumeSpike ? color.new(color.green, 0) : showVolumeBars and shortVolumeSpike ? color.new(color.purple, 0) : na, title="Volume Spike")
 
 // Zone penetration indicators
-plotshape(series=significant_zone_penetration and penetration_zone_type == "resistance" and show_alert_indicators, title="Resistance Zone Penetration", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.tiny)
-plotshape(series=significant_zone_penetration and penetration_zone_type == "support" and show_alert_indicators, title="Support Zone Penetration", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.tiny)
+plotshape(series=significant_zone_penetration and penetration_zone_type == "resistance" and show_alert_indicators, title="Resistance Zone Penetration", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)
+plotshape(series=significant_zone_penetration and penetration_zone_type == "support" and show_alert_indicators, title="Support Zone Penetration", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
 
 // Limit number of boxes displayed on the chart
 a_allBoxes = box.all
