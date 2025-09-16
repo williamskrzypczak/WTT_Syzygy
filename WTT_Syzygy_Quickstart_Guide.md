@@ -16,12 +16,12 @@ The indicator comes with optimized default settings that work well for most trad
 ## Signal Interpretation
 
 ### Volume Spike Signals
-- **Green Upward Label (Below Bar)**: Long signal - Volume spike with bullish price movement
-- **Red Downward Label (Above Bar)**: Short signal - Volume spike with bearish price movement
+- **Green Colored Bars**: Long signal - Volume spike with bullish price movement
+- **Bright Purple Colored Bars**: Short signal - Volume spike with bearish price movement
 
 ### Zone Penetration Signals
-- **Red Downward Triangle (Above Bar)**: Resistance zone penetration - Price moved >50% into resistance
-- **Green Upward Triangle (Below Bar)**: Support zone penetration - Price moved >50% into support
+- **Red Downward Triangle (Above Bar)**: Resistance zone penetration - Price moved >50% into resistance (small size for clear visibility)
+- **Green Upward Triangle (Below Bar)**: Support zone penetration - Price moved >50% into support (small size for clear visibility)
 
 ### Liquidity Zones
 - **Weak**: Low volume strength zones (gray/teal with high transparency)
@@ -63,6 +63,6 @@ The indicator comes with optimized default settings that work well for most trad
 
 **Disclaimer**: This indicator is for educational purposes only. Trading involves risk and past performance does not guarantee future results. Always use proper risk management and consider your trading experience before using any trading signals.
 
-**Version**: Rev1.1 - Enhanced visual indicators with small labels for volume spikes and tiny triangles for zone penetration
+**Version**: Rev1.2 - Streamlined visual design with volume spike bar coloring (green/purple) and improved triangle visibility
 
 **AI-Powered**: Signal generation and optimization algorithms derived using advanced AI technology for enhanced accuracy and reliability.
