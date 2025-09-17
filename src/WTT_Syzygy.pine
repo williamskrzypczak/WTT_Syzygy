@@ -1,9 +1,9 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.2", shorttitle="WTT_Syzygy R1.2", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.3", shorttitle="WTT_Syzygy R1.3", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.2
+// Version: Rev1.3
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis to provide enhanced market 
@@ -17,6 +17,7 @@ indicator("WTT_Syzygy_Rev1.2", shorttitle="WTT_Syzygy R1.2", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.3: Optimized zone display - Reduced support/resistance box extension from 20 bars to 10 bars for cleaner chart appearance and less clutter
 // R1.2: Streamlined visual design - Removed volume spike label plots, enabled volume spike bar coloring by default (green for upward, bright purple for downward), increased zone penetration triangle size to small for better visibility
 // R1.1: Enhanced visual indicators - Changed volume spike signals from circles to small labels, zone penetration from circles to tiny triangles, enabled low liquidity zones by default for comprehensive zone visibility
 // R1.0: Initial unified release combining WTT_VolumeSpike v1.2 and WTT_SupportResistance R1.65
@@ -116,7 +117,7 @@ process_zones(boxes, levels, is_resistance) =>
     if boxes.size() > 0
         for i = 0 to boxes.size() - 1
             box_id = boxes.get(i)
-            box_id.set_right(bar_index + 20)
+            box_id.set_right(bar_index + 10)
             box_id.set_border_color(na)
             
             // Check if price has broken the zone
