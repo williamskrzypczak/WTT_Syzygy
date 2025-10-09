@@ -1,9 +1,9 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.4", shorttitle="WTT_Syzygy R1.4", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.5", shorttitle="WTT_Syzygy R1.5", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.4
+// Version: Rev1.5
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis to provide enhanced market 
@@ -14,9 +14,11 @@ indicator("WTT_Syzygy_Rev1.4", shorttitle="WTT_Syzygy R1.4", overlay=true, max_b
 // - Support and resistance zone identification with liquidity analysis
 // - Daily high/low tracking
 // - Zone penetration alerts
+// - Zone breakout alerts with visual indicators
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.5: Added zone breakout detection - Implemented alerts and tiny dot indicators (orange for resistance breakout, blue for support breakout) when price breaks through support/resistance boxes, providing immediate notification of key level violations
 // R1.4: Enhanced alert control and color refinement - Added volume spike alerts toggle (default disabled), refined downward volume spike bar color to custom light blue-gray (#cfd7d7ca) for improved visual distinction
 // R1.3: Optimized zone display - Reduced support/resistance box extension from 20 bars to 10 bars for cleaner chart appearance and less clutter
 // R1.2: Streamlined visual design - Removed volume spike label plots, enabled volume spike bar coloring by default (green for upward, bright purple for downward), increased zone penetration triangle size to small for better visibility
@@ -112,6 +114,8 @@ process_zones(boxes, levels, is_resistance) =>
     price_in_zone = false
     zone_level = 0.0
     zone_price = 0.0
+    breakout_detected = false
+    breakout_price = 0.0
     
     // Create a list of indices to remove (we can't remove while iterating)
     var indices_to_remove = array.new<int>()
@@ -133,6 +137,10 @@ process_zones(boxes, levels, is_resistance) =>
                 box_id.set_right(bar_index)
                 box_id.set_text('')
                 array.push(indices_to_remove, i)
+                // Mark breakout detected
+                if not breakout_detected
+                    breakout_detected := true
+                    breakout_price := is_resistance ? box_id.get_top() : box_id.get_bottom()
             else
                 // Check if current price is inside this box
                 box_top = box_id.get_top()
@@ -151,7 +159,7 @@ process_zones(boxes, levels, is_resistance) =>
             boxes.remove(idx)
             levels.remove(idx)
     
-    [price_in_zone, zone_level, zone_price]
+    [price_in_zone, zone_level, zone_price, breakout_detected, breakout_price]
 
 // Main function to create and manage liquidity zones
 update_liquidity_zones() =>
@@ -218,10 +226,10 @@ update_liquidity_zones() =>
             float_sup_levels.push(current_level)
 
     // Process existing zones and check if price is inside
-    [in_res, res_level, res_price] = process_zones(box_res_array, float_res_levels, true)
-    [in_sup, sup_level, sup_price] = process_zones(box_sup_array, float_sup_levels, false)
+    [in_res, res_level, res_price, res_breakout, res_breakout_price] = process_zones(box_res_array, float_res_levels, true)
+    [in_sup, sup_level, sup_price, sup_breakout, sup_breakout_price] = process_zones(box_sup_array, float_sup_levels, false)
     
-    [in_res, in_sup, res_level, sup_level, res_price, sup_price]
+    [in_res, in_sup, res_level, sup_level, res_price, sup_price, res_breakout, sup_breakout, res_breakout_price, sup_breakout_price]
 
 // =============================================================================
 // DAILY HIGH/LOW TRACKING
@@ -299,7 +307,7 @@ else
 // =============================================================================
 
 // Update liquidity zones and get price status
-[in_resistance, in_support, res_zone_level, sup_zone_level, res_zone_price, sup_zone_price] = update_liquidity_zones()
+[in_resistance, in_support, res_zone_level, sup_zone_level, res_zone_price, sup_zone_price, resistance_breakout, support_breakout, resistance_breakout_price, support_breakout_price] = update_liquidity_zones()
 
 // Store price zone status for alerts
 price_in_resistance := in_resistance
@@ -358,6 +366,10 @@ barcolor(showVolumeBars and longVolumeSpike ? color.new(color.green, 0) : showVo
 plotshape(series=significant_zone_penetration and penetration_zone_type == "resistance" and show_alert_indicators, title="Resistance Zone Penetration", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)
 plotshape(series=significant_zone_penetration and penetration_zone_type == "support" and show_alert_indicators, title="Support Zone Penetration", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
 
+// Zone breakout indicators (dots)
+plotshape(series=resistance_breakout and show_alert_indicators, title="Resistance Breakout", location=location.abovebar, color=color.orange, style=shape.circle, size=size.tiny)
+plotshape(series=support_breakout and show_alert_indicators, title="Support Breakout", location=location.belowbar, color=color.blue, style=shape.circle, size=size.tiny)
+
 // Limit number of boxes displayed on the chart
 a_allBoxes = box.all
 if a_allBoxes.size() > box_amount
@@ -380,6 +392,13 @@ if enableAlerts and significant_zone_penetration and penetration_zone_type == "r
 
 if enableAlerts and significant_zone_penetration and penetration_zone_type == "support"
     alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") moved more than " + str.tostring(math.round(penetration_threshold * 100)) + "% into support zone.", alert.freq_once_per_bar)
+
+// Zone breakout alerts
+if enableAlerts and resistance_breakout
+    alert(syminfo.ticker + " - WTT_Syzygy Resistance Breakout: Price broke through resistance at " + str.tostring(resistance_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
+
+if enableAlerts and support_breakout
+    alert(syminfo.ticker + " - WTT_Syzygy Support Breakout: Price broke through support at " + str.tostring(support_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
 
 // =============================================================================
 // REFERENCE PLOTS (HIDDEN)
