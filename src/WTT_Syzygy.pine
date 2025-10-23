@@ -1,9 +1,9 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.5", shorttitle="WTT_Syzygy R1.5", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.6", shorttitle="WTT_Syzygy R1.6", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.5
+// Version: Rev1.6
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis to provide enhanced market 
@@ -18,6 +18,7 @@ indicator("WTT_Syzygy_Rev1.5", shorttitle="WTT_Syzygy R1.5", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.6: Refined zone penetration sensitivity - Increased default zone penetration threshold from 50% to 70% for more conservative alert triggering, reducing noise and focusing on significant zone penetrations
 // R1.5: Added zone breakout detection - Implemented alerts and tiny dot indicators (orange for resistance breakout, blue for support breakout) when price breaks through support/resistance boxes, providing immediate notification of key level violations
 // R1.4: Enhanced alert control and color refinement - Added volume spike alerts toggle (default disabled), refined downward volume spike bar color to custom light blue-gray (#cfd7d7ca) for improved visual distinction
 // R1.3: Optimized zone display - Reduced support/resistance box extension from 20 bars to 10 bars for cleaner chart appearance and less clutter
@@ -48,7 +49,7 @@ show_low_liquidity = input.bool(true, "Show Low Liquidity Zones", group="Support
 enableVolumeSpikeAlerts = input.bool(false, "Enable Volume Spike Alerts", group="Alert Settings", tooltip="Enable/disable volume spike alert notifications")
 alert_threshold_med = input.float(3, "Medium Liquidity Threshold", minval=1, maxval=10, step=0.1, group="Alert Settings", tooltip="Volume strength value to consider as medium liquidity (default: 3)")
 alert_threshold_high = input.float(7, "High Liquidity Threshold", minval=1, maxval=10, step=0.1, group="Alert Settings", tooltip="Volume strength value to consider as high liquidity (default: 7)")
-penetration_threshold = input.float(0.50, "Zone Penetration Threshold", minval=0.1, maxval=0.9, step=0.05, group="Alert Settings", tooltip="Percentage of zone height required to trigger penetration alerts (default: 50%)")
+penetration_threshold = input.float(0.70, "Zone Penetration Threshold", minval=0.1, maxval=0.9, step=0.05, group="Alert Settings", tooltip="Percentage of zone height required to trigger penetration alerts (default: 70%)")
 show_alert_indicators = input.bool(true, "Show Alert Indicators", group="Alert Settings", tooltip="Show visual indicators on the chart for alert triggers.")
 
 // Zone penetration alerts always enabled
