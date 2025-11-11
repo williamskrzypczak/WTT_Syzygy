@@ -18,6 +18,7 @@ indicator("WTT_Syzygy_Rev1.6", shorttitle="WTT_Syzygy R1.6", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.7: Updated zone penetration visuals - Switched penetration markers to tiny diamonds for clearer differentiation while reducing chart clutter
 // R1.6: Refined zone penetration sensitivity - Increased default zone penetration threshold from 50% to 70% for more conservative alert triggering, reducing noise and focusing on significant zone penetrations
 // R1.5: Added zone breakout detection - Implemented alerts and tiny dot indicators (orange for resistance breakout, blue for support breakout) when price breaks through support/resistance boxes, providing immediate notification of key level violations
 // R1.4: Enhanced alert control and color refinement - Added volume spike alerts toggle (default disabled), refined downward volume spike bar color to custom light blue-gray (#cfd7d7ca) for improved visual distinction
@@ -49,7 +50,7 @@ show_low_liquidity = input.bool(true, "Show Low Liquidity Zones", group="Support
 enableVolumeSpikeAlerts = input.bool(false, "Enable Volume Spike Alerts", group="Alert Settings", tooltip="Enable/disable volume spike alert notifications")
 alert_threshold_med = input.float(3, "Medium Liquidity Threshold", minval=1, maxval=10, step=0.1, group="Alert Settings", tooltip="Volume strength value to consider as medium liquidity (default: 3)")
 alert_threshold_high = input.float(7, "High Liquidity Threshold", minval=1, maxval=10, step=0.1, group="Alert Settings", tooltip="Volume strength value to consider as high liquidity (default: 7)")
-penetration_threshold = input.float(0.70, "Zone Penetration Threshold", minval=0.1, maxval=0.9, step=0.05, group="Alert Settings", tooltip="Percentage of zone height required to trigger penetration alerts (default: 70%)")
+penetration_threshold = input.float(0.70, "Zone Penetration Threshold", minval=0.1, maxval=0.9, step=0.05, group="Alert Settings", tooltip="Minimum percentage of zone height that must be penetrated to trigger alerts (default: 70% - requires MORE than 70% penetration)")
 show_alert_indicators = input.bool(true, "Show Alert Indicators", group="Alert Settings", tooltip="Show visual indicators on the chart for alert triggers.")
 
 // Zone penetration alerts always enabled
@@ -332,7 +333,7 @@ if price_in_resistance and box_res_array.size() > 0
             zone_height = box_top - box_bottom
             penetration_distance = box_top - close
             penetration_percentage = penetration_distance / zone_height
-            if penetration_percentage > penetration_threshold  // More than threshold% into the zone
+            if penetration_percentage > penetration_threshold  // More than 70% into the resistance zone
                 significant_zone_penetration := true
                 penetration_zone_type := "resistance"
                 break
@@ -347,7 +348,7 @@ if price_in_support and box_sup_array.size() > 0
             zone_height = box_top - box_bottom
             penetration_distance = close - box_bottom
             penetration_percentage = penetration_distance / zone_height
-            if penetration_percentage > penetration_threshold  // More than threshold% into the zone
+            if penetration_percentage > penetration_threshold  // More than 70% into the support zone
                 significant_zone_penetration := true
                 penetration_zone_type := "support"
                 break
@@ -364,8 +365,8 @@ shortVolumeSpike = isVolumeSpike and priceChange < 0
 barcolor(showVolumeBars and longVolumeSpike ? color.new(color.green, 0) : showVolumeBars and shortVolumeSpike ? #cfd7d7ca : na, title="Volume Spike")
 
 // Zone penetration indicators
-plotshape(series=significant_zone_penetration and penetration_zone_type == "resistance" and show_alert_indicators, title="Resistance Zone Penetration", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small)
-plotshape(series=significant_zone_penetration and penetration_zone_type == "support" and show_alert_indicators, title="Support Zone Penetration", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small)
+plotshape(series=significant_zone_penetration and penetration_zone_type == "resistance" and show_alert_indicators, title="Resistance Zone Penetration", location=location.abovebar, color=color.red, style=shape.diamond, size=size.tiny)
+plotshape(series=significant_zone_penetration and penetration_zone_type == "support" and show_alert_indicators, title="Support Zone Penetration", location=location.belowbar, color=color.green, style=shape.diamond, size=size.tiny)
 
 // Zone breakout indicators (dots)
 plotshape(series=resistance_breakout and show_alert_indicators, title="Resistance Breakout", location=location.abovebar, color=color.orange, style=shape.circle, size=size.tiny)
@@ -387,12 +388,12 @@ if enableVolumeSpikeAlerts and longVolumeCondition
 if enableVolumeSpikeAlerts and shortVolumeCondition
     alert("WTT_Syzygy Volume Spike Short - " + syminfo.ticker + " Price: " + str.tostring(close), alert.freq_once_per_bar)
 
-// Zone penetration alerts
+// Zone penetration alerts - requires MORE than 70% penetration
 if enableAlerts and significant_zone_penetration and penetration_zone_type == "resistance"
-    alert(syminfo.ticker + " - WTT_Syzygy Resistance zone penetration: Price (" + str.tostring(close) + ") moved more than " + str.tostring(math.round(penetration_threshold * 100)) + "% into resistance zone.", alert.freq_once_per_bar)
+    alert(syminfo.ticker + " - WTT_Syzygy Resistance zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(penetration_threshold * 100)) + "% into resistance zone.", alert.freq_once_per_bar)
 
 if enableAlerts and significant_zone_penetration and penetration_zone_type == "support"
-    alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") moved more than " + str.tostring(math.round(penetration_threshold * 100)) + "% into support zone.", alert.freq_once_per_bar)
+    alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(penetration_threshold * 100)) + "% into support zone.", alert.freq_once_per_bar)
 
 // Zone breakout alerts
 if enableAlerts and resistance_breakout
