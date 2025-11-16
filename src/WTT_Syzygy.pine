@@ -1,13 +1,15 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.6", shorttitle="WTT_Syzygy R1.6", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.9", shorttitle="WTT_Syzygy R1.9", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
+// Copyright © 2025 Bulldog Ventures Inc. All rights reserved.
+//
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.6
+// Version: Rev1.9
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
-// detection with support/resistance zone analysis to provide enhanced market 
-// insights and trading signals.
+// detection with support/resistance zone analysis and doji compression 
+// breakout detection to provide enhanced market insights and trading signals.
 //
 // Features:
 // - Volume spike detection with configurable thresholds
@@ -15,9 +17,12 @@ indicator("WTT_Syzygy_Rev1.6", shorttitle="WTT_Syzygy R1.6", overlay=true, max_b
 // - Daily high/low tracking
 // - Zone penetration alerts
 // - Zone breakout alerts with visual indicators
+// - Doji compression breakout detection with bullish/bearish markers
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.9: Adjusted compression detection sensitivity - Increased default doji body threshold from 13% to 25% for more inclusive doji pattern detection, capturing additional compression signals
+// R1.8: Added doji compression breakout detection - Integrated WTT Compression functionality to detect classic doji candles and mark bullish/bearish breakouts with orange/purple triangles, providing early momentum signals following indecision patterns
 // R1.7: Updated zone penetration visuals - Switched penetration markers to tiny diamonds for clearer differentiation while reducing chart clutter
 // R1.6: Refined zone penetration sensitivity - Increased default zone penetration threshold from 50% to 70% for more conservative alert triggering, reducing noise and focusing on significant zone penetrations
 // R1.5: Added zone breakout detection - Implemented alerts and tiny dot indicators (orange for resistance breakout, blue for support breakout) when price breaks through support/resistance boxes, providing immediate notification of key level violations
@@ -60,6 +65,20 @@ enableAlerts = true
 showSignals = input.bool(true, "Show Volume Spike Signals", group="Display Settings")
 show_daily_levels = input.bool(false, "Show Daily High/Low", group="Display Settings", tooltip="Display the highest high and lowest low of the current trading day")
 
+// Compression Detection Settings
+dojiBodyPercent = input.float(0.25, "Doji Body Threshold", minval=0.0, maxval=0.5, step=0.01, group="Compression Detection Settings", tooltip="Maximum body-to-range ratio (0.25 = body <= 25% of total range) for a candle to qualify as a doji.")
+requireCloseBreak = input.bool(true, "Require Close Breakout", group="Compression Detection Settings", tooltip="When enabled, the breakout candle must close beyond the doji high/low. Disable to react on intrabar breaches.")
+confirmOnBarClose = input.bool(true, "Confirm Breakouts On Close", group="Compression Detection Settings", tooltip="Wait for the bar to close before confirming breakout signals. Disable to allow intrabar alerts/markers that may disappear if price reverses.")
+
+// Compression Visual Settings
+showCompressionMarkers = input.bool(true, "Show Compression Markers", group="Compression Visual Settings", tooltip="Toggle display of the doji breakout triangles.")
+compressionUpColor = input.color(color.new(color.orange, 0), "Bullish Breakout Color", group="Compression Visual Settings", tooltip="Marker color for bullish doji breakouts.")
+defaultCompressionPurple = color.rgb(128, 0, 255)
+compressionDownColor = input.color(color.new(defaultCompressionPurple, 0), "Bearish Breakout Color", group="Compression Visual Settings", tooltip="Marker color for bearish doji breakouts.")
+
+// Compression Alert Settings
+enableCompressionAlerts = input.bool(true, "Enable Compression Alerts", group="Alert Settings", tooltip="Send an alert notification whenever a bullish or bearish doji breakout is detected.")
+
 // Volume spike bars always enabled
 showVolumeBars = true
 
@@ -92,6 +111,38 @@ priceThreshold = useATR ? atr * atrMultiplier : priceChangeThreshold
 // Volume spike signal generation
 longVolumeCondition = isVolumeSpike and priceChange > priceThreshold and close > open
 shortVolumeCondition = isVolumeSpike and priceChange < -priceThreshold and close < open
+
+// =============================================================================
+// COMPRESSION (DOJI BREAKOUT) CALCULATIONS
+// =============================================================================
+
+// Validate range data
+hasValidRange = not na(high) and not na(low) and high != low
+trueRange = hasValidRange ? high - low : na
+bodySize = not na(close) and not na(open) ? math.abs(close - open) : na
+
+// Detect doji candles
+isDoji = hasValidRange and not na(bodySize) and not na(trueRange) and trueRange > 0 and bodySize <= trueRange * dojiBodyPercent
+
+// Check if previous bar was a doji
+hasPriorBar = bar_index > 0
+wasDoji = hasPriorBar and nz(isDoji[1], false)
+
+// Check if price breaks out of doji range
+hasPriorHighLow = hasPriorBar and not na(high[1]) and not na(low[1])
+closeBreaksUp = hasPriorHighLow and (requireCloseBreak ? close >= high[1] : high > high[1])
+closeBreaksDown = hasPriorHighLow and (requireCloseBreak ? close <= low[1] : low < low[1])
+
+// Determine breakout signals
+isBullBreakout = wasDoji and closeBreaksUp
+isBearBreakout = wasDoji and closeBreaksDown
+isBarConfirmed = not confirmOnBarClose or barstate.isconfirmed
+isBullCompressionSignal = isBullBreakout and isBarConfirmed
+isBearCompressionSignal = isBearBreakout and isBarConfirmed
+
+// Alert messages
+bullCompressionAlertMessage = "WaveRider WTT Syzygy Compression: Bullish doji breakout on " + syminfo.ticker + " at " + str.tostring(close, format.mintick)
+bearCompressionAlertMessage = "WaveRider WTT Syzygy Compression: Bearish doji breakout on " + syminfo.ticker + " at " + str.tostring(close, format.mintick)
 
 // =============================================================================
 // SUPPORT/RESISTANCE ZONE MANAGEMENT
@@ -372,6 +423,10 @@ plotshape(series=significant_zone_penetration and penetration_zone_type == "supp
 plotshape(series=resistance_breakout and show_alert_indicators, title="Resistance Breakout", location=location.abovebar, color=color.orange, style=shape.circle, size=size.tiny)
 plotshape(series=support_breakout and show_alert_indicators, title="Support Breakout", location=location.belowbar, color=color.blue, style=shape.circle, size=size.tiny)
 
+// Compression (doji breakout) indicators
+plotshape(series=showCompressionMarkers and isBullCompressionSignal, title="Doji Breakout Up", style=shape.triangleup, location=location.belowbar, size=size.tiny, color=compressionUpColor)
+plotshape(series=showCompressionMarkers and isBearCompressionSignal, title="Doji Breakout Down", style=shape.triangledown, location=location.abovebar, size=size.tiny, color=compressionDownColor)
+
 // Limit number of boxes displayed on the chart
 a_allBoxes = box.all
 if a_allBoxes.size() > box_amount
@@ -402,6 +457,13 @@ if enableAlerts and resistance_breakout
 if enableAlerts and support_breakout
     alert(syminfo.ticker + " - WTT_Syzygy Support Breakout: Price broke through support at " + str.tostring(support_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
 
+// Compression (doji breakout) alerts
+if enableCompressionAlerts and isBullCompressionSignal
+    alert(bullCompressionAlertMessage, alert.freq_once_per_bar)
+
+if enableCompressionAlerts and isBearCompressionSignal
+    alert(bearCompressionAlertMessage, alert.freq_once_per_bar)
+
 // =============================================================================
 // REFERENCE PLOTS (HIDDEN)
 // =============================================================================
@@ -409,3 +471,7 @@ if enableAlerts and support_breakout
 // Plot volume ratio for reference (hidden)
 plot(volumeRatio, "Volume Ratio", color=color.gray, display=display.none)
 plot(volumeThreshold, "Threshold", color=color.red, display=display.none)
+
+// =============================================================================
+// END OF INDICATOR
+// =============================================================================
