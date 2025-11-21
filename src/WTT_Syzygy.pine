@@ -1,11 +1,11 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.7", shorttitle="WTT_Syzygy R1.7", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.8", shorttitle="WTT_Syzygy R1.8", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // Copyright © 2025 Bulldog Ventures Inc. All rights reserved.
 //
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.7
+// Version: Rev1.8
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis to provide enhanced market 
@@ -20,6 +20,7 @@ indicator("WTT_Syzygy_Rev1.7", shorttitle="WTT_Syzygy R1.7", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.8: Hardcoded parameters and streamlined alert controls - Hardcoded key parameters (volume lookback, ATR length, liquidity thresholds, zone colors), combined alert toggles (volume spike, penetration, breakout), updated breakout indicator colors to bright cranberry and lime, added individual liquidity zone visibility toggles
 // R1.7: Updated zone penetration visuals - Switched penetration markers to tiny diamonds for clearer differentiation while reducing chart clutter
 // R1.6: Refined zone penetration sensitivity - Increased default zone penetration threshold from 50% to 70% for more conservative alert triggering, reducing noise and focusing on significant zone penetrations
 // R1.5: Added zone breakout detection - Implemented alerts and tiny dot indicators (orange for resistance breakout, blue for support breakout) when price breaks through support/resistance boxes, providing immediate notification of key level violations
@@ -35,34 +36,41 @@ indicator("WTT_Syzygy_Rev1.7", shorttitle="WTT_Syzygy R1.7", overlay=true, max_b
 // =============================================================================
 
 // Volume Spike Settings
-volumeLength = input.int(20, "Volume Lookback Period", minval=5, maxval=100, group="Volume Spike Settings")
 volumeThreshold = input.float(1.2, "Volume Spike Threshold", minval=1.0, maxval=5.0, step=0.1, group="Volume Spike Settings")
 priceChangeThreshold = input.float(0.5, "Price Change Threshold (%)", minval=0.1, maxval=2.0, step=0.1, group="Volume Spike Settings")
-useATR = input.bool(true, "Use ATR for Price Filter", group="Volume Spike Settings")
-atrLength = input.int(14, "ATR Length", minval=5, maxval=50, group="Volume Spike Settings")
-atrMultiplier = input.float(1.0, "ATR Multiplier", minval=0.5, maxval=3.0, step=0.1, group="Volume Spike Settings")
 
 // Support/Resistance Settings
-box_amount = input.int(5, 'Number of Liquidity Zones', step=1, tooltip="Set the displayed number of liquidity zones", group="Support/Resistance Settings")
-color_high_sup = input.color(color.gray, 'Support Zone Color', inline='sup', group="Support/Resistance Settings")
-color_high_res = input.color(color.rgb(0, 128, 128), 'Resistance Zone Color', inline='sup', group="Support/Resistance Settings")
-show_low_liquidity = input.bool(true, "Show Low Liquidity Zones", group="Support/Resistance Settings", tooltip="Toggle visibility of low liquidity zones")
+showWeakLiquidityZones = input.bool(true, "Show Weak Liquidity Zones", group="Support/Resistance Settings", tooltip="Toggle visibility of weak liquidity zones")
+showModerateLiquidityZones = input.bool(true, "Show Moderate Liquidity Zones", group="Support/Resistance Settings", tooltip="Toggle visibility of moderate liquidity zones")
+showStrongLiquidityZones = input.bool(true, "Show Strong Liquidity Zones", group="Support/Resistance Settings", tooltip="Toggle visibility of strong liquidity zones")
 
 // Alert Settings
-enableVolumeSpikeAlerts = input.bool(false, "Enable Volume Spike Alerts", group="Alert Settings", tooltip="Enable/disable volume spike alert notifications")
-alert_threshold_med = input.float(3, "Medium Liquidity Threshold", minval=1, maxval=10, step=0.1, group="Alert Settings", tooltip="Volume strength value to consider as medium liquidity (default: 3)")
-alert_threshold_high = input.float(7, "High Liquidity Threshold", minval=1, maxval=10, step=0.1, group="Alert Settings", tooltip="Volume strength value to consider as high liquidity (default: 7)")
-penetration_threshold = input.float(0.70, "Zone Penetration Threshold", minval=0.1, maxval=0.9, step=0.05, group="Alert Settings", tooltip="Minimum percentage of zone height that must be penetrated to trigger alerts (default: 70% - requires MORE than 70% penetration)")
+enableVolumeSpikeAlerts = input.bool(true, "Enable Volume Spike Alerts", group="Alert Settings", tooltip="Enable/disable volume spike alert notifications (both long and short)")
+enablePenetrationAlerts = input.bool(false, "Enable Zone Penetration Alerts", group="Alert Settings", tooltip="Enable/disable zone penetration alert notifications (both resistance and support)")
+enableBreakoutAlerts = input.bool(true, "Enable Zone Breakout Alerts", group="Alert Settings", tooltip="Enable/disable zone breakout alert notifications (both resistance and support)")
 show_alert_indicators = input.bool(true, "Show Alert Indicators", group="Alert Settings", tooltip="Show visual indicators on the chart for alert triggers.")
-
-// Zone penetration alerts always enabled
-enableAlerts = true
 
 // Display Settings
 show_daily_levels = input.bool(false, "Show Daily High/Low", group="Display Settings", tooltip="Display the highest high and lowest low of the current trading day")
 
 // Volume spike bars always enabled
 showVolumeBars = true
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+// Hardcoded parameters
+VOLUME_LOOKBACK_PERIOD = 20
+ATR_LENGTH = 14
+NUMBER_OF_LIQUIDITY_ZONES = 5
+MEDIUM_LIQUIDITY_THRESHOLD = 3.0
+HIGH_LIQUIDITY_THRESHOLD = 7.0
+ZONE_PENETRATION_THRESHOLD = 0.70
+USE_ATR = true
+ATR_MULTIPLIER = 1.0
+SUPPORT_ZONE_COLOR = color.gray
+RESISTANCE_ZONE_COLOR = color.rgb(0, 128, 128)
 
 // =============================================================================
 // FUNCTION DEFINITIONS
@@ -81,14 +89,14 @@ normalize_volume() =>
 // =============================================================================
 
 // Volume analysis for spike detection
-volumeMA = ta.sma(volume, volumeLength)
+volumeMA = ta.sma(volume, VOLUME_LOOKBACK_PERIOD)
 volumeRatio = volume / volumeMA
 isVolumeSpike = volumeRatio > volumeThreshold
 
 // Price analysis for spike detection
 priceChange = ((close - close[1]) / close[1]) * 100
-atr = ta.atr(atrLength)
-priceThreshold = useATR ? atr * atrMultiplier : priceChangeThreshold
+atr = ta.atr(ATR_LENGTH)
+priceThreshold = USE_ATR ? atr * ATR_MULTIPLIER : priceChangeThreshold
 
 // Volume spike signal generation
 longVolumeCondition = isVolumeSpike and priceChange > priceThreshold and close > open
@@ -170,37 +178,39 @@ update_liquidity_zones() =>
     _size = (high - low) / 2
 
     // Color definitions with transparency
-    color_low_sup = color.new(color_high_sup, 95)
-    color_low_res = color.new(color_high_res, 95)
+    color_low_sup = color.new(SUPPORT_ZONE_COLOR, 95)
+    color_low_res = color.new(RESISTANCE_ZONE_COLOR, 95)
     
     // Darker boxes for better visibility
-    color_upper = color.new(color_high_sup, math.max(35, 75 - volume_ * 9))
-    color_lower = color.new(color_high_res, math.max(35, 75 - volume_ * 9))
+    color_upper = color.new(SUPPORT_ZONE_COLOR, math.max(35, 75 - volume_ * 9))
+    color_lower = color.new(RESISTANCE_ZONE_COLOR, math.max(35, 75 - volume_ * 9))
     text_col = color.white
     
     // Set the label text based on liquidity level
-    txt = volume_ < alert_threshold_med ? "Weak" : 
-          volume_ < alert_threshold_high ? "Moderate" : 
+    txt = volume_ < MEDIUM_LIQUIDITY_THRESHOLD ? "Weak" : 
+          volume_ < HIGH_LIQUIDITY_THRESHOLD ? "Moderate" : 
           "Strong"
     
     // Calculate current liquidity level
-    current_level = volume_ >= alert_threshold_high ? alert_threshold_high : 
-                   volume_ >= alert_threshold_med ? alert_threshold_med : 
+    current_level = volume_ >= HIGH_LIQUIDITY_THRESHOLD ? HIGH_LIQUIDITY_THRESHOLD : 
+                   volume_ >= MEDIUM_LIQUIDITY_THRESHOLD ? MEDIUM_LIQUIDITY_THRESHOLD : 
                    1.0
 
     // Liquidity zone creation for high prices (resistance)
     if h[1] == high[1] and high < h
-        if volume_ >= alert_threshold_med or show_low_liquidity
+        shouldShowZone = (volume_ >= HIGH_LIQUIDITY_THRESHOLD and showStrongLiquidityZones) or (volume_ >= MEDIUM_LIQUIDITY_THRESHOLD and volume_ < HIGH_LIQUIDITY_THRESHOLD and showModerateLiquidityZones) or (volume_ < MEDIUM_LIQUIDITY_THRESHOLD and showWeakLiquidityZones)
+        
+        if shouldShowZone
             box box1 = na
-            if volume_ >= alert_threshold_high
+            if volume_ >= HIGH_LIQUIDITY_THRESHOLD
                 box1 := box.new(bar_index[1], high[1] + _size[1], bar_index, high[1], bgcolor=color_lower, force_overlay=true, border_color=na)
-            else if volume_ >= alert_threshold_med
-                box1 := box.new(bar_index[1], high[1] + _size[1], bar_index, high[1], bgcolor=color.new(color_high_res, 15), force_overlay=false, border_color=na)
+            else if volume_ >= MEDIUM_LIQUIDITY_THRESHOLD
+                box1 := box.new(bar_index[1], high[1] + _size[1], bar_index, high[1], bgcolor=color.new(RESISTANCE_ZONE_COLOR, 15), force_overlay=false, border_color=na)
             else
-                box1 := box.new(bar_index[1], high[1] + _size[1], bar_index, high[1], bgcolor=color.new(color_high_res, 45), force_overlay=false, border_color=na)
+                box1 := box.new(bar_index[1], high[1] + _size[1], bar_index, high[1], bgcolor=color.new(RESISTANCE_ZONE_COLOR, 45), force_overlay=false, border_color=na)
 
             box.set_text(box1, txt)
-            box.set_text_size(box1, volume_ >= alert_threshold_high ? size.large : volume_ >= alert_threshold_med ? size.normal : size.small)
+            box.set_text_size(box1, volume_ >= HIGH_LIQUIDITY_THRESHOLD ? size.large : volume_ >= MEDIUM_LIQUIDITY_THRESHOLD ? size.normal : size.small)
             box.set_text_halign(box1, text.align_right)
             box.set_text_color(box1, text_col)
             
@@ -209,17 +219,19 @@ update_liquidity_zones() =>
 
     // Liquidity zone creation for low prices (support)
     if l[1] == low[1] and low > l
-        if volume_ >= alert_threshold_med or show_low_liquidity
+        shouldShowZone = (volume_ >= HIGH_LIQUIDITY_THRESHOLD and showStrongLiquidityZones) or (volume_ >= MEDIUM_LIQUIDITY_THRESHOLD and volume_ < HIGH_LIQUIDITY_THRESHOLD and showModerateLiquidityZones) or (volume_ < MEDIUM_LIQUIDITY_THRESHOLD and showWeakLiquidityZones)
+        
+        if shouldShowZone
             box box2 = na
-            if volume_ >= alert_threshold_high
+            if volume_ >= HIGH_LIQUIDITY_THRESHOLD
                 box2 := box.new(bar_index[1], low[1], bar_index, low[1] - _size[1], bgcolor=color_upper, force_overlay=true, border_color=na)
-            else if volume_ >= alert_threshold_med
-                box2 := box.new(bar_index[1], low[1], bar_index, low[1] - _size[1], bgcolor=color.new(color_high_sup, 15), force_overlay=false, border_color=na)
+            else if volume_ >= MEDIUM_LIQUIDITY_THRESHOLD
+                box2 := box.new(bar_index[1], low[1], bar_index, low[1] - _size[1], bgcolor=color.new(SUPPORT_ZONE_COLOR, 15), force_overlay=false, border_color=na)
             else
-                box2 := box.new(bar_index[1], low[1], bar_index, low[1] - _size[1], bgcolor=color.new(color_high_sup, 45), force_overlay=false, border_color=na)
+                box2 := box.new(bar_index[1], low[1], bar_index, low[1] - _size[1], bgcolor=color.new(SUPPORT_ZONE_COLOR, 45), force_overlay=false, border_color=na)
 
             box.set_text(box2, txt)
-            box.set_text_size(box2, volume_ >= alert_threshold_high ? size.large : volume_ >= alert_threshold_med ? size.normal : size.small)
+            box.set_text_size(box2, volume_ >= HIGH_LIQUIDITY_THRESHOLD ? size.large : volume_ >= MEDIUM_LIQUIDITY_THRESHOLD ? size.normal : size.small)
             box.set_text_halign(box2, text.align_right)
             box.set_text_color(box2, text_col)
             
@@ -328,7 +340,7 @@ if price_in_resistance and box_res_array.size() > 0
             zone_height = box_top - box_bottom
             penetration_distance = box_top - close
             penetration_percentage = penetration_distance / zone_height
-            if penetration_percentage > penetration_threshold  // More than 70% into the resistance zone
+            if penetration_percentage > ZONE_PENETRATION_THRESHOLD  // More than 70% into the resistance zone
                 significant_zone_penetration := true
                 penetration_zone_type := "resistance"
                 break
@@ -343,7 +355,7 @@ if price_in_support and box_sup_array.size() > 0
             zone_height = box_top - box_bottom
             penetration_distance = close - box_bottom
             penetration_percentage = penetration_distance / zone_height
-            if penetration_percentage > penetration_threshold  // More than 70% into the support zone
+            if penetration_percentage > ZONE_PENETRATION_THRESHOLD  // More than 70% into the support zone
                 significant_zone_penetration := true
                 penetration_zone_type := "support"
                 break
@@ -362,12 +374,12 @@ plotshape(series=significant_zone_penetration and penetration_zone_type == "resi
 plotshape(series=significant_zone_penetration and penetration_zone_type == "support" and show_alert_indicators, title="Support Zone Penetration", location=location.belowbar, color=color.green, style=shape.diamond, size=size.tiny)
 
 // Zone breakout indicators (dots)
-plotshape(series=resistance_breakout and show_alert_indicators, title="Resistance Breakout", location=location.abovebar, color=color.orange, style=shape.circle, size=size.tiny)
-plotshape(series=support_breakout and show_alert_indicators, title="Support Breakout", location=location.belowbar, color=color.blue, style=shape.circle, size=size.tiny)
+plotshape(series=resistance_breakout and show_alert_indicators, title="Resistance Breakout", location=location.abovebar, color=color.rgb(220, 20, 60), style=shape.circle, size=size.tiny)
+plotshape(series=support_breakout and show_alert_indicators, title="Support Breakout", location=location.belowbar, color=color.rgb(50, 255, 0), style=shape.circle, size=size.tiny)
 
 // Limit number of boxes displayed on the chart
 a_allBoxes = box.all
-if a_allBoxes.size() > box_amount
+if a_allBoxes.size() > NUMBER_OF_LIQUIDITY_ZONES
     box.delete(a_allBoxes.shift())
 
 // =============================================================================
@@ -382,17 +394,17 @@ if enableVolumeSpikeAlerts and shortVolumeCondition
     alert("WTT_Syzygy Volume Spike Short - " + syminfo.ticker + " Price: " + str.tostring(close), alert.freq_once_per_bar)
 
 // Zone penetration alerts - requires MORE than 70% penetration
-if enableAlerts and significant_zone_penetration and penetration_zone_type == "resistance"
-    alert(syminfo.ticker + " - WTT_Syzygy Resistance zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(penetration_threshold * 100)) + "% into resistance zone.", alert.freq_once_per_bar)
+if enablePenetrationAlerts and significant_zone_penetration and penetration_zone_type == "resistance"
+    alert(syminfo.ticker + " - WTT_Syzygy Resistance zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(ZONE_PENETRATION_THRESHOLD * 100)) + "% into resistance zone.", alert.freq_once_per_bar)
 
-if enableAlerts and significant_zone_penetration and penetration_zone_type == "support"
-    alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(penetration_threshold * 100)) + "% into support zone.", alert.freq_once_per_bar)
+if enablePenetrationAlerts and significant_zone_penetration and penetration_zone_type == "support"
+    alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(ZONE_PENETRATION_THRESHOLD * 100)) + "% into support zone.", alert.freq_once_per_bar)
 
 // Zone breakout alerts
-if enableAlerts and resistance_breakout
+if enableBreakoutAlerts and resistance_breakout
     alert(syminfo.ticker + " - WTT_Syzygy Resistance Breakout: Price broke through resistance at " + str.tostring(resistance_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
 
-if enableAlerts and support_breakout
+if enableBreakoutAlerts and support_breakout
     alert(syminfo.ticker + " - WTT_Syzygy Support Breakout: Price broke through support at " + str.tostring(support_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
 
 // =============================================================================
