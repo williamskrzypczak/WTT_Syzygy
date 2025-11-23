@@ -1,11 +1,11 @@
 //@version=5
-indicator("WTT_Syzygy_Rev1.8", shorttitle="WTT_Syzygy R1.8", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev1.9", shorttitle="WTT_Syzygy R1.9", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // Copyright © 2025 Bulldog Ventures Inc. All rights reserved.
 //
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev1.8
+// Version: Rev1.9
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis to provide enhanced market 
@@ -20,6 +20,7 @@ indicator("WTT_Syzygy_Rev1.8", shorttitle="WTT_Syzygy R1.8", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R1.9: Refined alert toggle structure - Maintained combined alert toggles for simplified control (volume spike alerts, zone penetration alerts, zone breakout alerts) providing streamlined alert management
 // R1.8: Hardcoded parameters and streamlined alert controls - Hardcoded key parameters (volume lookback, ATR length, liquidity thresholds, zone colors), combined alert toggles (volume spike, penetration, breakout), updated breakout indicator colors to bright cranberry and lime, added individual liquidity zone visibility toggles
 // R1.7: Updated zone penetration visuals - Switched penetration markers to tiny diamonds for clearer differentiation while reducing chart clutter
 // R1.6: Refined zone penetration sensitivity - Increased default zone penetration threshold from 50% to 70% for more conservative alert triggering, reducing noise and focusing on significant zone penetrations
