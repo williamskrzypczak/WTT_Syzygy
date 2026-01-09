@@ -1,11 +1,11 @@
 //@version=5
-indicator("WTT_Syzygy_Rev2.3", shorttitle="WTT_Syzygy R2.3", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev2.4", shorttitle="WTT_Syzygy R2.4", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // Copyright © 2025 Bulldog Ventures Inc. All rights reserved.
 //
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev2.3
+// Version: Rev2.4
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis, doji breakout detection,
@@ -24,6 +24,7 @@ indicator("WTT_Syzygy_Rev2.3", shorttitle="WTT_Syzygy R2.3", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R2.4: Added trade direction recommendations to table and alerts - Added recommendation column to success ratio table with arrow indicators (↑ for LONG, ↓ for SHORT, → for NEUTRAL), added toggle to show/hide ratio column (default off), abbreviated "Recommendation" to "Rec", included trade direction recommendations in breakout and penetration alert messages
 // R2.3: Enhanced success ratio table with penetration tracking and visual improvements - Added penetration success ratio tracking (resistance and support), updated table with black background for ratio column and white text for labels, ratio text colors now reflect trade direction (green for long bias, red for short bias)
 // R2.2: Added breakout success ratio tracking - Implemented success ratio calculation for zone breakouts, tracking whether price moves past previous breakout levels within 3-5 bars after each breakout, displays separate ratios for resistance and support breakouts (last 10) in a table for decision-making data
 // R2.1: Added WTT PriceAction (period opening price threshold detection) - Integrated timeframe-agnostic period opening price tracking with ATR-based thresholds, visual threshold lines and trigger markers, alerts for threshold crossings
@@ -82,6 +83,7 @@ show_alert_indicators = input.bool(true, "Show Alert Indicators", group="Alert S
 
 // Display Settings
 show_daily_levels = input.bool(false, "Show Daily High/Low", group="Display Settings", tooltip="Display the highest high and lowest low of the current trading day")
+showRatioColumn = input.bool(false, "Show Ratio Column", group="Display Settings", tooltip="Toggle visibility of the ratio column in the success ratio table")
 
 // Volume spike bars always enabled
 showVolumeBars = true
@@ -556,6 +558,10 @@ if array.size(supBreakoutSuccess) > 0
 supTotalCount = array.size(supBreakoutBars)
 supSuccessRatio = supTotalCount > 0 ? (supSuccessCount / supTotalCount) * 100.0 : 0.0
 
+// Calculate breakout recommendations for alerts
+resRecommendation = resTotalCount > 0 ? (resSuccessRatio >= 50.0 ? "↑" : "↓") : "→"
+supRecommendation = supTotalCount > 0 ? (supSuccessRatio <= 50.0 ? "↑" : "↓") : "→"
+
 // Store price zone status for alerts
 price_in_resistance := in_resistance
 price_in_support := in_support
@@ -702,6 +708,10 @@ if array.size(supPenetrationSuccess) > 0
 supPenetrationTotalCount = array.size(supPenetrationBars)
 supPenetrationSuccessRatio = supPenetrationTotalCount > 0 ? (supPenetrationSuccessCount / supPenetrationTotalCount) * 100.0 : 0.0
 
+// Calculate penetration recommendations for alerts
+resPenetrationRecommendation = resPenetrationTotalCount > 0 ? (resPenetrationSuccessRatio >= 50.0 ? "↑" : "↓") : "→"
+supPenetrationRecommendation = supPenetrationTotalCount > 0 ? (supPenetrationSuccessRatio <= 50.0 ? "↑" : "↓") : "→"
+
 // =============================================================================
 // VISUAL ELEMENTS
 // =============================================================================
@@ -788,38 +798,56 @@ if a_allBoxes.size() > NUMBER_OF_LIQUIDITY_ZONES
 
 // Create and update table showing breakout and penetration success ratios
 if barstate.islast
-    var table breakoutTable = table.new(position.top_right, 2, 5, bgcolor=color.new(color.white, 95), border_width=2, border_color=color.gray)
+    var table breakoutTable = table.new(position.top_right, 3, 5, bgcolor=color.new(color.white, 95), border_width=2, border_color=color.gray)
     
     // Clear and rebuild table on last bar
-    table.clear(breakoutTable, 0, 0, 1, 4)
+    table.clear(breakoutTable, 0, 0, 2, 4)
     
     // Header row
     table.cell(breakoutTable, 0, 0, "Success Ratio", bgcolor=color.new(color.gray, 70), text_color=color.white, text_size=size.normal)
-    table.cell(breakoutTable, 1, 0, "Ratio", bgcolor=color.new(color.gray, 70), text_color=color.white, text_size=size.normal)
+    if showRatioColumn
+        table.cell(breakoutTable, 1, 0, "Ratio", bgcolor=color.new(color.gray, 70), text_color=color.white, text_size=size.normal)
+    table.cell(breakoutTable, 2, 0, "Rec", bgcolor=color.new(color.gray, 70), text_color=color.white, text_size=size.normal)
     
     // Resistance breakout row
     resRatioText = resTotalCount > 0 ? str.tostring(resSuccessRatio, "#.#") + "%" : "N/A"
     resRatioTextColor = resTotalCount > 0 ? (resSuccessRatio >= 50.0 ? color.green : color.red) : color.yellow  // Green for long bias, red for short bias
+    resRecommendation = resTotalCount > 0 ? (resSuccessRatio >= 50.0 ? "↑" : "↓") : "→"
+    resRecommendationColor = resTotalCount > 0 ? (resSuccessRatio >= 50.0 ? color.green : color.red) : color.yellow
     table.cell(breakoutTable, 0, 1, "Res Breakout", text_color=color.white, text_size=size.small)
-    table.cell(breakoutTable, 1, 1, resRatioText, bgcolor=color.black, text_color=resRatioTextColor, text_size=size.normal)
+    if showRatioColumn
+        table.cell(breakoutTable, 1, 1, resRatioText, bgcolor=color.black, text_color=resRatioTextColor, text_size=size.normal)
+    table.cell(breakoutTable, 2, 1, resRecommendation, bgcolor=color.black, text_color=resRecommendationColor, text_size=size.normal)
     
     // Support breakout row
     supRatioText = supTotalCount > 0 ? str.tostring(supSuccessRatio, "#.#") + "%" : "N/A"
     supRatioTextColor = supTotalCount > 0 ? (supSuccessRatio <= 50.0 ? color.green : color.red) : color.yellow  // Green for long bias (low success = support failing), red for short bias
+    supRecommendation = supTotalCount > 0 ? (supSuccessRatio <= 50.0 ? "↑" : "↓") : "→"
+    supRecommendationColor = supTotalCount > 0 ? (supSuccessRatio <= 50.0 ? color.green : color.red) : color.yellow
     table.cell(breakoutTable, 0, 2, "Sup Breakout", text_color=color.white, text_size=size.small)
-    table.cell(breakoutTable, 1, 2, supRatioText, bgcolor=color.black, text_color=supRatioTextColor, text_size=size.normal)
+    if showRatioColumn
+        table.cell(breakoutTable, 1, 2, supRatioText, bgcolor=color.black, text_color=supRatioTextColor, text_size=size.normal)
+    table.cell(breakoutTable, 2, 2, supRecommendation, bgcolor=color.black, text_color=supRecommendationColor, text_size=size.normal)
     
     // Resistance penetration row
     resPenetrationRatioText = resPenetrationTotalCount > 0 ? str.tostring(resPenetrationSuccessRatio, "#.#") + "%" : "N/A"
     resPenetrationRatioTextColor = resPenetrationTotalCount > 0 ? (resPenetrationSuccessRatio >= 50.0 ? color.green : color.red) : color.yellow  // Green for long bias, red for short bias
+    resPenetrationRecommendation = resPenetrationTotalCount > 0 ? (resPenetrationSuccessRatio >= 50.0 ? "↑" : "↓") : "→"
+    resPenetrationRecommendationColor = resPenetrationTotalCount > 0 ? (resPenetrationSuccessRatio >= 50.0 ? color.green : color.red) : color.yellow
     table.cell(breakoutTable, 0, 3, "Res Penetration", text_color=color.white, text_size=size.small)
-    table.cell(breakoutTable, 1, 3, resPenetrationRatioText, bgcolor=color.black, text_color=resPenetrationRatioTextColor, text_size=size.normal)
+    if showRatioColumn
+        table.cell(breakoutTable, 1, 3, resPenetrationRatioText, bgcolor=color.black, text_color=resPenetrationRatioTextColor, text_size=size.normal)
+    table.cell(breakoutTable, 2, 3, resPenetrationRecommendation, bgcolor=color.black, text_color=resPenetrationRecommendationColor, text_size=size.normal)
     
     // Support penetration row
     supPenetrationRatioText = supPenetrationTotalCount > 0 ? str.tostring(supPenetrationSuccessRatio, "#.#") + "%" : "N/A"
     supPenetrationRatioTextColor = supPenetrationTotalCount > 0 ? (supPenetrationSuccessRatio <= 50.0 ? color.green : color.red) : color.yellow  // Green for long bias (low success = support failing), red for short bias
+    supPenetrationRecommendation = supPenetrationTotalCount > 0 ? (supPenetrationSuccessRatio <= 50.0 ? "↑" : "↓") : "→"
+    supPenetrationRecommendationColor = supPenetrationTotalCount > 0 ? (supPenetrationSuccessRatio <= 50.0 ? color.green : color.red) : color.yellow
     table.cell(breakoutTable, 0, 4, "Sup Penetration", text_color=color.white, text_size=size.small)
-    table.cell(breakoutTable, 1, 4, supPenetrationRatioText, bgcolor=color.black, text_color=supPenetrationRatioTextColor, text_size=size.normal)
+    if showRatioColumn
+        table.cell(breakoutTable, 1, 4, supPenetrationRatioText, bgcolor=color.black, text_color=supPenetrationRatioTextColor, text_size=size.normal)
+    table.cell(breakoutTable, 2, 4, supPenetrationRecommendation, bgcolor=color.black, text_color=supPenetrationRecommendationColor, text_size=size.normal)
 
 // =============================================================================
 // ALERT SYSTEM
@@ -834,17 +862,17 @@ if enableVolumeSpikeAlerts and shortVolumeCondition
 
 // Zone penetration alerts - requires MORE than 70% penetration
 if enablePenetrationAlerts and significant_zone_penetration and penetration_zone_type == "resistance"
-    alert(syminfo.ticker + " - WTT_Syzygy Resistance zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(ZONE_PENETRATION_THRESHOLD * 100)) + "% into resistance zone.", alert.freq_once_per_bar)
+    alert(syminfo.ticker + " - WTT_Syzygy Resistance zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(ZONE_PENETRATION_THRESHOLD * 100)) + "% into resistance zone. - Rec: " + resPenetrationRecommendation, alert.freq_once_per_bar)
 
 if enablePenetrationAlerts and significant_zone_penetration and penetration_zone_type == "support"
-    alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(ZONE_PENETRATION_THRESHOLD * 100)) + "% into support zone.", alert.freq_once_per_bar)
+    alert(syminfo.ticker + " - WTT_Syzygy Support zone penetration: Price (" + str.tostring(close) + ") penetrated MORE than " + str.tostring(math.round(ZONE_PENETRATION_THRESHOLD * 100)) + "% into support zone. - Rec: " + supPenetrationRecommendation, alert.freq_once_per_bar)
 
 // Zone breakout alerts
 if enableBreakoutAlerts and resistance_breakout
-    alert(syminfo.ticker + " - WTT_Syzygy Resistance Breakout: Price broke through resistance at " + str.tostring(resistance_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
+    alert(syminfo.ticker + " - WTT_Syzygy Resistance Breakout: Price broke through resistance at " + str.tostring(resistance_breakout_price) + ", current price: " + str.tostring(close) + " - Rec: " + resRecommendation, alert.freq_once_per_bar)
 
 if enableBreakoutAlerts and support_breakout
-    alert(syminfo.ticker + " - WTT_Syzygy Support Breakout: Price broke through support at " + str.tostring(support_breakout_price) + ", current price: " + str.tostring(close), alert.freq_once_per_bar)
+    alert(syminfo.ticker + " - WTT_Syzygy Support Breakout: Price broke through support at " + str.tostring(support_breakout_price) + ", current price: " + str.tostring(close) + " - Rec: " + supRecommendation, alert.freq_once_per_bar)
 
 // Compression breakout alerts
 if enableCompressionAlerts and isBullSignal
