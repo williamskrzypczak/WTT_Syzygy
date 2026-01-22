@@ -1,11 +1,11 @@
 //@version=5
-indicator("WTT_Syzygy_Rev2.4", shorttitle="WTT_Syzygy R2.4", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("WTT_Syzygy_Rev2.5", shorttitle="WTT_Syzygy R2.5", overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // =============================================================================
 // Copyright © 2025 Bulldog Ventures Inc. All rights reserved.
 //
 // WaveRider Trading Technologies - WTT_Syzygy Unified Indicator
-// Version: Rev2.4
+// Version: Rev2.5
 // 
 // Description: A comprehensive trading indicator that combines volume spike 
 // detection with support/resistance zone analysis, doji breakout detection,
@@ -24,6 +24,7 @@ indicator("WTT_Syzygy_Rev2.4", shorttitle="WTT_Syzygy R2.4", overlay=true, max_b
 // - Unified alert system for all signal types
 //
 // Revision History:
+// R2.5: Fixed compression breakout alerts - Fixed compression breakout alerts not triggering when checkbox was enabled by checking breakout conditions directly instead of relying on confirmed signal variables, ensuring alerts fire correctly when enableCompressionAlerts is checked
 // R2.4: Added trade direction recommendations to table and alerts - Added recommendation column to success ratio table with arrow indicators (↑ for LONG, ↓ for SHORT, → for NEUTRAL), added toggle to show/hide ratio column (default off), abbreviated "Recommendation" to "Rec", included trade direction recommendations in breakout and penetration alert messages
 // R2.3: Enhanced success ratio table with penetration tracking and visual improvements - Added penetration success ratio tracking (resistance and support), updated table with black background for ratio column and white text for labels, ratio text colors now reflect trade direction (green for long bias, red for short bias)
 // R2.2: Added breakout success ratio tracking - Implemented success ratio calculation for zone breakouts, tracking whether price moves past previous breakout levels within 3-5 bars after each breakout, displays separate ratios for resistance and support breakouts (last 10) in a table for decision-making data
@@ -855,10 +856,10 @@ if barstate.islast
 
 // Volume spike alerts
 if enableVolumeSpikeAlerts and longVolumeCondition
-    alert("WTT_Syzygy Volume Spike Long - " + syminfo.ticker + " Price: " + str.tostring(close), alert.freq_once_per_bar)
+    alert("WTT_Syzygy Volume Spike Long - " + syminfo.ticker + " Price: " + str.tostring(close) + " - Rec: ↑", alert.freq_once_per_bar)
 
 if enableVolumeSpikeAlerts and shortVolumeCondition
-    alert("WTT_Syzygy Volume Spike Short - " + syminfo.ticker + " Price: " + str.tostring(close), alert.freq_once_per_bar)
+    alert("WTT_Syzygy Volume Spike Short - " + syminfo.ticker + " Price: " + str.tostring(close) + " - Rec: ↓", alert.freq_once_per_bar)
 
 // Zone penetration alerts - requires MORE than 70% penetration
 if enablePenetrationAlerts and significant_zone_penetration and penetration_zone_type == "resistance"
@@ -875,11 +876,13 @@ if enableBreakoutAlerts and support_breakout
     alert(syminfo.ticker + " - WTT_Syzygy Support Breakout: Price broke through support at " + str.tostring(support_breakout_price) + ", current price: " + str.tostring(close) + " - Rec: " + supRecommendation, alert.freq_once_per_bar)
 
 // Compression breakout alerts
-if enableCompressionAlerts and isBullSignal
-    alert("WaveRider WTT Compression: Bullish doji breakout on " + syminfo.ticker + " at " + str.tostring(close, format.mintick), alert.freq_once_per_bar)
+// Check breakout conditions directly and respect confirmOnBarClose setting
+compressionAlertConfirmed = not confirmOnBarClose or barstate.isconfirmed
+if enableCompressionAlerts and isBullBreakout and compressionAlertConfirmed
+    alert("WaveRider WTT Compression: Bullish doji breakout on " + syminfo.ticker + " at " + str.tostring(close, format.mintick) + " - Rec: ↑", alert.freq_once_per_bar)
 
-if enableCompressionAlerts and isBearSignal
-    alert("WaveRider WTT Compression: Bearish doji breakout on " + syminfo.ticker + " at " + str.tostring(close, format.mintick), alert.freq_once_per_bar)
+if enableCompressionAlerts and isBearBreakout and compressionAlertConfirmed
+    alert("WaveRider WTT Compression: Bearish doji breakout on " + syminfo.ticker + " at " + str.tostring(close, format.mintick) + " - Rec: ↓", alert.freq_once_per_bar)
 
 // Price Action alerts
 // Alert on threshold crossing (price moves from below to above, or above to below)
